@@ -15,6 +15,7 @@ echo "== пакеты =="
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 command -v ffmpeg >/dev/null 2>&1 || apt-get install -y -qq ffmpeg
+command -v ethtool >/dev/null 2>&1 || apt-get install -y -qq ethtool
 if ! command -v yt-dlp >/dev/null 2>&1; then
   curl -sL -o /usr/local/bin/yt-dlp \
     https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
@@ -35,6 +36,14 @@ chmod +x /usr/local/bin/update-ytdlp.sh
 cp "$HERE/tvyt-update.service" "$HERE/tvyt-update.timer" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now tvyt-update.timer >/dev/null 2>&1 || true
+
+echo "== wake-on-lan =="
+cp "$HERE/wol-enable.sh" /usr/local/bin/wol-enable.sh
+chmod +x /usr/local/bin/wol-enable.sh
+cp "$HERE/tvyt-wol.service" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable tvyt-wol >/dev/null 2>&1 || true
+systemctl restart tvyt-wol || true
 
 echo "== проверка =="
 sleep 2

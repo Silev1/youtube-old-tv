@@ -205,6 +205,63 @@ systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 `ReferenceError: Can't find variable: MostVisitedUI` сыплется из самого
 браузера (Smart Hub), к странице отношения не имеет. Отфильтровано в `onerror`.
 
+## Включение сервера по сети (Wake-on-LAN)
+
+Сервер — ноутбук, и его можно включать удалённо, не подходя к нему.
+
+Настройка уже сделана юнитом `tvyt-wol.service` (скрипт `wol-enable.sh`):
+
+```sh
+cp wol-enable.sh /usr/local/bin/wol-enable.sh
+chmod +x /usr/local/bin/wol-enable.sh
+cp tvyt-wol.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now tvyt-wol
+```
+
+Что он делает при каждой загрузке (после ребута настройки сбрасываются):
+
+1. `ethtool -s enp3s0 wol g` — карта принимает magic packet;
+2. `echo enabled > .../power/wakeup` — разрешает пробуждение на уровне PCI;
+3. включает `PXSX` в `/proc/acpi/wakeup` — пробуждение из **S5** (полное выключение).
+
+Проверка:
+
+```sh
+ethtool enp3s0 | grep 'Wake-on'      # должно быть Wake-on: g
+grep PXSX /proc/acpi/wakeup          # должно быть *enabled
+```
+
+### Как включить
+
+С Windows (скрипт `wake-tvyt.ps1`, MAC уже прописан):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File wake-tvyt.ps1
+```
+
+или двойным щелчком по `wake-tvyt.cmd`. Скрипт отправляет пакет на
+`192.168.0.255:9` (и дублирует на порт 7) и ждёт, пока сервер ответит на пинг.
+
+С телефона: любое приложение «Wake On Lan», MAC `98:4B:E1:95:38:CF`,
+адрес `192.168.0.255`, порт 9.
+
+### Что важно знать
+
+- **Кабель, не Wi-Fi.** Пробуждение работает только по Ethernet: Wi-Fi-карта
+  в выключенном ноутбуке не питается. У сервера `wlp2s0b1` не используется.
+- **Wake-on-LAN не использует IP.** Пакет идёт на MAC-адрес широковещательно,
+  поэтому статический IP нужен только чтобы потом попасть на сервер, а не для
+  самого пробуждения.
+- **BIOS.** Если в BIOS ноутбука выключен «Wake on LAN» / включён «ErP» (полное
+  отключение питания в выключенном состоянии), пробуждение не сработает —
+  из операционной системы это не лечится.
+- **Только своя локальная сеть.** Broadcast за пределы роутера не выходит.
+  Для пробуждения извне нужен port forwarding и устройство, которое всегда
+  включено (роутер с поддержкой WoL или Raspberry Pi).
+- После `shutdown` индикатор на сетевом порту обычно продолжает гореть —
+  это признак того, что карта в режиме ожидания magic packet.
+
 ## Отладка
 
 ```sh
