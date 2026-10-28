@@ -70,6 +70,41 @@ systemctl daemon-reload
 systemctl enable --now tvyt
 ```
 
+Всё это вместе с таймером обновления делает `deploy.sh`:
+
+```sh
+sh deploy.sh
+```
+
+### 2.1. Автообновление yt-dlp
+
+YouTube регулярно ломает старые версии `yt-dlp` — через месяц-два скачивание
+перестаёт работать с ошибкой вида «Sign in to confirm you're not a bot».
+Поэтому раз в неделю таймер обновляет бинарник:
+
+```sh
+cp update-ytdlp.sh /usr/local/bin/update-ytdlp.sh
+chmod +x /usr/local/bin/update-ytdlp.sh
+cp tvyt-update.service tvyt-update.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now tvyt-update.timer
+```
+
+Проверить и запустить вручную:
+
+```sh
+systemctl list-timers tvyt-update      # когда следующий раз
+systemctl start tvyt-update.service    # обновить сейчас
+journalctl -u tvyt-update -n 20        # что было в прошлый раз
+```
+
+Скрипт скачивает релиз во временный файл, проверяет что он запускается и
+возвращает версию, и только потом подменяет бинарник. Если GitHub недоступен
+или файл битый — остаётся прежняя рабочая версия, сервис не ломается.
+Перезапуск `tvyt` не требуется: `yt-dlp` вызывается как подпроцесс.
+
+Расписание — понедельник 04:30 плюс случайный разброс до часа.
+
 ### 3. Статический IP
 
 Телевизор запоминает адрес, поэтому сервер должен всегда получать один и тот же.
@@ -173,9 +208,9 @@ systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 ## Отладка
 
 ```sh
-journalctl -u tvyt -f
+journalctl -u tvyt -f                 # сам сервер
+journalctl -u tvyt-update -n 50       # обновления yt-dlp
 ```
-
 Полезное в логе:
 
 ```

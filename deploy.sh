@@ -29,6 +29,13 @@ systemctl daemon-reload
 systemctl enable tvyt >/dev/null 2>&1 || true
 systemctl restart tvyt
 
+echo "== автообновление yt-dlp =="
+cp "$HERE/update-ytdlp.sh" /usr/local/bin/update-ytdlp.sh
+chmod +x /usr/local/bin/update-ytdlp.sh
+cp "$HERE/tvyt-update.service" "$HERE/tvyt-update.timer" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now tvyt-update.timer >/dev/null 2>&1 || true
+
 echo "== проверка =="
 sleep 2
 systemctl is-active tvyt
