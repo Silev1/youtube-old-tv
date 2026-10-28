@@ -1,0 +1,7 @@
+cache/
+cookies.txt
+*.mp4
+*.fs
+*.part
+*.log
+__pycache__/

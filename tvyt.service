@@ -1,0 +1,16 @@
+[Unit]
+Description=tvyt - YouTube for old Samsung TV
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tvyt
+ExecStart=/usr/bin/python3 /opt/tvyt/app.py
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
